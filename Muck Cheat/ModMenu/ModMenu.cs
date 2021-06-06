@@ -19,6 +19,17 @@ public class ModMenu : MonoBehaviour
     private int selectedElementIndex;
     private MenuElement selectedElement;
     private ButtonPositioning _pos;
+    private MenuFolder currentFolder;
+
+    public bool InFolder()
+    {
+        return currentFolder != null;
+    }
+
+    public void SetCurrentFolder(MenuFolder folder)
+    {
+        currentFolder = folder;
+    }
 
     public ButtonPositioning pos { get { return _pos;} }
 
@@ -109,6 +120,17 @@ public class ModMenu : MonoBehaviour
         return mSelection;
     }
 
+    public MenuStringSelection CreateStringSelection(string label)
+    {
+        if (!isRendering()) return null;
+
+        MenuStringSelection mStringSelection = CreateElement<MenuStringSelection>(label);
+
+        mStringSelection.Init();
+
+        return mStringSelection;
+    }
+
     public MenuLabel CreateLabel(string label)
     {
         if (!isRendering()) return null;
@@ -118,6 +140,17 @@ public class ModMenu : MonoBehaviour
         mSelection.Init();
 
         return mSelection;
+    }
+
+    public MenuFolder CreateFolder(string label)
+    {
+        if (!isRendering()) return null;
+
+        MenuFolder mFolder = CreateElement<MenuFolder>(label);
+
+        mFolder.Init();
+
+        return mFolder;
     }
 
     #endregion
@@ -253,7 +286,11 @@ public class ModMenu : MonoBehaviour
             }
             _pos.SetElements(totalElements);
 
-            List<MenuElement> reversed = new List<MenuElement>(elements);
+            int _selectedElementIndex = !InFolder() ? selectedElementIndex : currentFolder.selectedElementIndex;
+            List<MenuElement> _elements = !InFolder() ? elements : currentFolder.GetElements();
+            MenuElement _selectedElement = !InFolder() ? selectedElement : currentFolder.selectedElement;
+
+            List<MenuElement> reversed = new List<MenuElement>(_elements);
 
             reversed.Reverse();
 
@@ -283,7 +320,7 @@ public class ModMenu : MonoBehaviour
             }
 
             RectTransform pTrans = panelObj.GetComponent<RectTransform>();
-            SetRectTransformValues(_pos.GetBackgroundRect(elements.Count, elements[elements.Count / 2].GetComponent<RectTransform>().localPosition.y), pTrans);
+            SetRectTransformValues(_pos.GetBackgroundRect(_elements.Count, _elements[_elements.Count / 2].GetComponent<RectTransform>().localPosition.y), pTrans);
         }
     }
 
@@ -304,6 +341,7 @@ public class ModMenu : MonoBehaviour
     {
         if (draw)
         {
+            selectedElement.GetButton().Select();
             mainObject.SetActive(true);
         }
         else
@@ -321,66 +359,98 @@ public class ModMenu : MonoBehaviour
     #region Controls
     void Update()
     {
-
+        MenuElement _selectedElement = !InFolder() ? selectedElement : currentFolder.selectedElement;
         if (selectedElement != null && !selectedElement.IsSelected()) selectedElement.GetButton().Select();
         if (Input.GetKeyDown(KeyCode.Insert))
         {
             ChangeMode(!drawGUI);
         }
 
-        if (Input.GetKeyDown(KeyCode.Keypad8))
+        if(IsDrawing() && isRendering())
         {
-            SelectPreviousButton();
-        }
+            if (Input.GetKeyDown(KeyCode.Keypad8))
+            {
+                SelectPreviousButton();
+            }
 
-        if (Input.GetKeyDown(KeyCode.Keypad2))
-        {
-            SelectNextButton();
-        }
+            if (Input.GetKeyDown(KeyCode.Keypad2))
+            {
+                SelectNextButton();
+            }
 
-        if(Input.GetKeyDown(KeyCode.Keypad4))
-        {
-            selectedElement.LeftArrow();
-        }
+            if (Input.GetKeyDown(KeyCode.Keypad4))
+            {
+                _selectedElement.LeftArrow();
+            }
 
-        if (Input.GetKeyDown(KeyCode.Keypad6))
-        {
-            selectedElement.RightArrow();
-        }
+            if (Input.GetKeyDown(KeyCode.Keypad6))
+            {
+                _selectedElement.RightArrow();
+            }
 
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Keypad5))
-        {
-            selectedElement.Pressed();
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Keypad5))
+            {
+                _selectedElement.Pressed();
+            }
         }
     }
 
     public void SelectPreviousButton()
     {
-        selectedElementIndex--;
+        int _selectedElementIndex = !InFolder() ? selectedElementIndex : currentFolder.selectedElementIndex;
+        List<MenuElement> _elements = !InFolder() ? elements : currentFolder.GetElements();
+        MenuElement _selectedElement = !InFolder() ? selectedElement : currentFolder.selectedElement;
+
+        _selectedElementIndex--;
         if (selectedElementIndex == -1)
         {
-            selectedElementIndex = elements.Count - 1;
-            selectedElement = elements[elements.Count - 1];
+            _selectedElementIndex = _elements.Count - 1;
+            _selectedElement = _elements[_elements.Count - 1];
         }
         else
-            selectedElement = elements[selectedElementIndex];
+            _selectedElement = _elements[_selectedElementIndex];
 
-        selectedElement.GetButton().Select();
-        selectedElement.Select(false);
+        _selectedElement.GetButton().Select();
+        _selectedElement.Select(false);
+
+        if(InFolder())
+        {
+            currentFolder.selectedElementIndex = _selectedElementIndex;
+            currentFolder.selectedElement = _selectedElement;
+        } else
+        {
+            selectedElementIndex = _selectedElementIndex;
+            selectedElement = _selectedElement;
+        }
     }
 
     public void SelectNextButton()
     {
-        selectedElementIndex++;
-        if (selectedElementIndex == elements.Count)
-        {
-            selectedElementIndex = 0;
-            selectedElement = elements[0];
-        } else
-            selectedElement = elements[selectedElementIndex];
+        int _selectedElementIndex = !InFolder() ? selectedElementIndex : currentFolder.selectedElementIndex;
+        List<MenuElement> _elements = !InFolder() ? elements : currentFolder.GetElements();
+        MenuElement _selectedElement = !InFolder() ? selectedElement : currentFolder.selectedElement;
 
-        selectedElement.GetButton().Select();
-        selectedElement.Select(true);
+        _selectedElementIndex++;
+        if (_selectedElementIndex == _elements.Count)
+        {
+            _selectedElementIndex = 0;
+            _selectedElement = _elements[0];
+        } else
+            _selectedElement = _elements[_selectedElementIndex];
+
+        _selectedElement.GetButton().Select();
+        _selectedElement.Select(true);
+
+        if (InFolder())
+        {
+            currentFolder.selectedElementIndex = _selectedElementIndex;
+            currentFolder.selectedElement = _selectedElement;
+        }
+        else
+        {
+            selectedElementIndex = _selectedElementIndex;
+            selectedElement = _selectedElement;
+        }
     }
     #endregion
 }

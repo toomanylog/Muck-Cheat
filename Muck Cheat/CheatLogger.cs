@@ -3,18 +3,18 @@ using System.Text;
 using System.IO;
 using System;
 
-namespace GameName_Cheat
+namespace Muck_Cheat
 {
     public class CheatLogger : MonoBehaviour {
 
         public static CheatLogger instance;
-        public static bool enabled;
+        public static bool loggerEnabled;
 
         public StringBuilder builder;
 
         public void Start() {
-            if(enabled) {
-		builder = new StringBuilder();
+            if(loggerEnabled) {
+		        builder = new StringBuilder();
                 Application.logMessageReceived += new Application.LogCallback(log);
                 if(!File.Exists("latest.log")) {
                     File.CreateText("latest.log");
